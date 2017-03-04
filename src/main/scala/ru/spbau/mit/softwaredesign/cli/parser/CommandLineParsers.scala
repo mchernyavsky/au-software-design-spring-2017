@@ -22,8 +22,8 @@ object CommandLineParsers extends RegexParsers {
   }
 
   /** A parser that matches application */
-  def application: Parser[Application] = rep1(block) ^^ {
-    case function :: args => Application(function, args)
+  def application: Parser[Application] = block ~ rep(block) ^^ {
+    case function ~ args => Application(function, args)
   }
 
   /** A parser that matches substitution or block */

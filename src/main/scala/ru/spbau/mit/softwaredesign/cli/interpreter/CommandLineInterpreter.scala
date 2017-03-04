@@ -45,6 +45,7 @@ class CommandLineInterpreter {
           case "exit" => evalExit()
           case commandName => evalExternal(commandName, args, in, out)
         }
+      case _ => new IllegalStateException()
     }
   }
 
