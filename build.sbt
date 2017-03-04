@@ -4,4 +4,6 @@ version := "1.0"
 
 scalaVersion := "2.11.8"
 
+libraryDependencies += "com.jsuereth" %% "scala-arm" % "2.0"
+libraryDependencies += "commons-io" % "commons-io" % "2.5"
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.5"
