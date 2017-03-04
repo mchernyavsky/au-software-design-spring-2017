@@ -44,6 +44,6 @@ object CommandLineParsers extends RegexParsers {
   def weakQuotedBlock: Parser[Block] = "\"" ~> rep(substitution | weakQuotedLiteral) <~ "\"" ^^ { Block(_) }
   def fullQuotedBlock: Parser[Block] = "'" ~> rep(fullQuotedLiteral) <~ "'" ^^ { Block(_) }
 
-  /** Parse all of String `line` with shell.parser `composition` */
+  /** Parse all of String `line` with parser `composition` */
   def parse(line: String): ParseResult[Composition] = parseAll(composition, line)
 }
