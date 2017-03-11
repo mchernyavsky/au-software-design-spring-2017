@@ -75,12 +75,18 @@ class CommandLineInterpreter {
       (lines, words, bytes)
     }
 
-    args.foreach { arg =>
-      val fileName = processBlock(arg)
-      for (fileIn <- managed(new FileInputStream(fileName))) {
-        val source = Source.fromInputStream(fileIn).mkString
-        val (lines, words, bytes) = countLinesWordsBytes(source)
-        out.write(s"$lines $words $bytes $fileName\n".getBytes)
+    if (args.isEmpty) {
+      val source = Source.fromInputStream(in).mkString
+      val (lines, words, bytes) = countLinesWordsBytes(source)
+      out.write(s"$lines $words $bytes\n".getBytes)
+    } else {
+      args.foreach { arg =>
+        val fileName = processBlock(arg)
+        for (fileIn <- managed(new FileInputStream(fileName))) {
+          val source = Source.fromInputStream(fileIn).mkString
+          val (lines, words, bytes) = countLinesWordsBytes(source)
+          out.write(s"$lines $words $bytes $fileName\n".getBytes)
+        }
       }
     }
   }
