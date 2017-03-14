@@ -10,6 +10,7 @@ import ru.spbau.mit.softwaredesign.cli.parser.{Unit => _, _}
 import scala.collection.mutable
 import scala.io.Source
 import scala.sys.process._
+import scala.util.Properties
 
 /** Stores environment and performs command interpretation */
 class CommandLineInterpreter {
@@ -64,12 +65,12 @@ class CommandLineInterpreter {
 
   private def evalEcho(args: List[Block], out: OutputStream): Unit = {
     val concatArgs = args.map { processBlock } mkString " "
-    out.write((concatArgs + '\n').getBytes)
+    out.write((concatArgs + Properties.lineSeparator).getBytes)
   }
 
   private def evalWc(args: List[Block], in: InputStream, out: OutputStream): Unit = {
     def countLinesWordsBytes(text: String): (Int, Int, Int) = {
-      val lines = text.split('\n').length
+      val lines = text.split(Properties.lineSeparator).length
       val words = text.split("""\s+""").length
       val bytes = text.getBytes.length
       (lines, words, bytes)
@@ -78,14 +79,14 @@ class CommandLineInterpreter {
     if (args.isEmpty) {
       val source = Source.fromInputStream(in).mkString
       val (lines, words, bytes) = countLinesWordsBytes(source)
-      out.write(s"$lines $words $bytes\n".getBytes)
+      out.write(s"$lines $words $bytes${Properties.lineSeparator}".getBytes)
     } else {
       args.foreach { arg =>
         val fileName = processBlock(arg)
         for (fileIn <- managed(new FileInputStream(fileName))) {
           val source = Source.fromInputStream(fileIn).mkString
           val (lines, words, bytes) = countLinesWordsBytes(source)
-          out.write(s"$lines $words $bytes $fileName\n".getBytes)
+          out.write(s"$lines $words $bytes $fileName${Properties.lineSeparator}".getBytes)
         }
       }
     }
@@ -93,7 +94,7 @@ class CommandLineInterpreter {
 
   private def evalPwd(out: OutputStream): Unit = {
     val userDir = System.getProperty("user.dir")
-    out.write((userDir + '\n').getBytes)
+    out.write((userDir + Properties.lineSeparator).getBytes)
   }
 
   private def evalExit(): Unit = {
@@ -102,7 +103,7 @@ class CommandLineInterpreter {
 
   private def evalExternal(commandName: String, args: List[Block], in: InputStream, out: OutputStream): Unit = {
     val concatArgs = args.map { processBlock } mkString " "
-    val logger = ProcessLogger(line => out.write((line + '\n').getBytes), _ => ())
+    val logger = ProcessLogger(line => out.write((line + Properties.lineSeparator).getBytes), _ => ())
     if (in.equals(System.in)) {
       s"$commandName $concatArgs" ! logger
     } else {

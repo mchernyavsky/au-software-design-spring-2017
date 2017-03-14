@@ -8,6 +8,7 @@ import resource.managed
 import ru.spbau.mit.softwaredesign.cli.parser.{CommandLineParsers, Composition}
 
 import scala.io.Source
+import scala.util.Properties
 
 class InterpreterSpec extends FlatSpec {
   private val testFilePath = getClass.getResource("/lorem_ipsum.txt").getPath
@@ -44,7 +45,7 @@ class InterpreterSpec extends FlatSpec {
     withPipe { (sink, source) =>
       val commandLine = "echo a b c"
       evalCommandLine(commandLine, cli, sink)
-      val expected = "a b c\n"
+      val expected = "a b c" + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -54,7 +55,7 @@ class InterpreterSpec extends FlatSpec {
     withPipe { (sink, source) =>
       val commandLine = "echo"
       evalCommandLine(commandLine, cli, sink)
-      val expected = "\n"
+      val expected = Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -74,7 +75,7 @@ class InterpreterSpec extends FlatSpec {
     withPipe { (sink, source) =>
       val commandLine = "echo a b c | cat"
       evalCommandLine(commandLine, cli, sink)
-      val expected = "a b c\n"
+      val expected = "a b c" + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -94,7 +95,7 @@ class InterpreterSpec extends FlatSpec {
     withPipe { (sink, source) =>
       val commandLine = "echo a b c | wc"
       evalCommandLine(commandLine, cli, sink)
-      val expected = "1 3 6\n"
+      val expected = "1 3 6" + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -104,7 +105,7 @@ class InterpreterSpec extends FlatSpec {
     withPipe { (sink, source) =>
       val commandLine = "pwd"
       evalCommandLine(commandLine, cli, sink)
-      val expected = System.getProperty("user.dir") + '\n'
+      val expected = System.getProperty("user.dir") + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -114,7 +115,7 @@ class InterpreterSpec extends FlatSpec {
     withPipe { (sink, source) =>
       val commandLine = s"head -n 1 $testFilePath"
       evalCommandLine(commandLine, cli, sink)
-      val expected = Source.fromFile(testFilePath).getLines().next() + '\n'
+      val expected = Source.fromFile(testFilePath).getLines().next() + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -124,7 +125,7 @@ class InterpreterSpec extends FlatSpec {
     withPipe { (sink, source) =>
       val commandLine = "echo a b c | head -n 1"
       evalCommandLine(commandLine, cli, sink)
-      val expected = "a b c\n"
+      val expected = "a b c" + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -134,7 +135,7 @@ class InterpreterSpec extends FlatSpec {
     withPipe { (sink, source) =>
       val commandLine = "answer=42 | echo $answer"
       evalCommandLine(commandLine, cli, sink)
-      val expected = "42\n"
+      val expected = "42" + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
