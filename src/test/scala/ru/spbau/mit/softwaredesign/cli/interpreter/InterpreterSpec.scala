@@ -140,4 +140,77 @@ class InterpreterSpec extends FlatSpec {
       assertResult(expected)(actual)
     }
   }
+
+  it should "interpret grep with args" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val testFilePath = getClass.getResource("/grep_test.txt").getPath
+      val commandLine = s"grep 3 $testFilePath"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = s"3${Properties.lineSeparator}3${Properties.lineSeparator}"
+      val actual = Source.fromInputStream(source).mkString
+      assert(actual.startsWith(expected))
+    }
+  }
+
+  it should "interpret grep with no args" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val commandLine = "echo a | grep a"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = "a" + Properties.lineSeparator
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  "grep -i" should "ignore case #1" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val commandLine = "echo A | grep -i a"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = "A" + Properties.lineSeparator
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  "grep -i" should "ignore case #2" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val commandLine = "echo a | grep -i A"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = "a" + Properties.lineSeparator
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  "grep -w" should "match whole word #1" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val commandLine = "echo ab | grep -w ab"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = "ab" + Properties.lineSeparator
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  "grep -w" should "match whole word #2" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val commandLine = "echo ab | grep -w a"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = ""
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  it should "interpret grep -A n" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val testFilePath = getClass.getResource("/grep_test.txt").getPath
+      val commandLine = s"grep -A 1 3 $testFilePath"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = s"3${Properties.lineSeparator}1${Properties.lineSeparator}" +
+                     s"3${Properties.lineSeparator}1${Properties.lineSeparator}"
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
 }
