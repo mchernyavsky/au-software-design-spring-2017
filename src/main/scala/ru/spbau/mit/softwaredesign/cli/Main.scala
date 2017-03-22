@@ -1,6 +1,7 @@
 package ru.spbau.mit.softwaredesign.cli
 
 import java.io.IOException
+import java.util.regex.PatternSyntaxException
 
 import ru.spbau.mit.softwaredesign.cli.interpreter.CommandLineInterpreter
 import ru.spbau.mit.softwaredesign.cli.parser.CommandLineParsers
@@ -17,6 +18,7 @@ object Main extends App {
       }
     } catch {
       case e: IOException => Console.err.println(s"IOException: ${e.getMessage}")
+      case e: PatternSyntaxException => Console.err.println(s"PatternSyntaxException: ${e.getMessage}")
     }
 
     Console.out.print("> ")
