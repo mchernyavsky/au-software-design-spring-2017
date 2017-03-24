@@ -6,6 +6,7 @@ import java.nio.channels._
 import org.apache.commons.io.IOUtils
 import resource._
 import ru.spbau.mit.softwaredesign.cli.parser.{Unit => _, _}
+import scopt.OptionParser
 
 import scala.collection.mutable
 import scala.io.Source
@@ -44,6 +45,7 @@ class CommandLineInterpreter {
           case "wc" => evalWc(args, in, out)
           case "pwd" => evalPwd(out)
           case "exit" => evalExit()
+          case "grep" => evalGrep(args, in, out)
           case commandName => evalExternal(commandName, args, in, out)
         }
       case _ => new IllegalStateException()
@@ -99,6 +101,74 @@ class CommandLineInterpreter {
 
   private def evalExit(): Unit = {
     System.exit(0)
+  }
+
+  private def evalGrep(args: List[Block], in: InputStream, out: OutputStream): Unit = {
+    case class Config(ignoreCase: Boolean = false,
+                      wordRegexp: Boolean = false,
+                      afterContext: Int = 0,
+                      pattern: String = "",
+                      fileNames: Seq[String] = Seq())
+
+    val parser = new OptionParser[Config]("grep") {
+      head("grep", "0.99")
+
+      opt[Unit]('i', "ignore-case").action( (_, config) =>
+        config.copy(ignoreCase = true) ).text("Ignore case distinctions in both the <pattern> and the input files.")
+
+      opt[Unit]('w', "word_regexp").action( (_, config) =>
+        config.copy(wordRegexp = true) ).text("Select only those lines containing matches that form whole words.")
+
+      opt[Int]('A', "after-context").action( (value, config) =>
+        config.copy(afterContext = value) ).text("Print <value> lines of trailing context after matching lines.")
+
+      arg[String]("<pattern>").required().action( (regex, config) =>
+        config.copy(pattern = regex) ).text("Use regex as the pattern.")
+
+      arg[String]("<file>...").unbounded().optional().action( (fileName, config) =>
+        config.copy(fileNames = config.fileNames :+ fileName) ).text("Obtain patterns from files, one per line.")
+    }
+
+    parser.parse(args.map { processBlock }, Config()) match {
+      case Some(Config(ignoreCase, wordRegexp, afterContext, pattern, fileNames)) =>
+        var regexBuilder = pattern
+        if (ignoreCase)
+          regexBuilder = "(?i)" + regexBuilder
+        if (wordRegexp)
+          regexBuilder = "\\b" + regexBuilder + "\\b"
+        val regex = regexBuilder.r
+
+        def containsPattern(line: String): Boolean = {
+          regex.findFirstIn(line) match {
+            case Some(_) => true
+            case None => false
+          }
+        }
+
+        def handleInput(in: InputStream): Unit = {
+          var restAfterContext = 0
+          Source.fromInputStream(in).getLines.foreach { line =>
+            if (containsPattern(line)) {
+              out.write((line + Properties.lineSeparator).getBytes)
+              restAfterContext = afterContext
+            } else if (restAfterContext > 0) {
+              out.write((line + Properties.lineSeparator).getBytes)
+              restAfterContext -= 1
+            }
+          }
+        }
+
+        if (fileNames.isEmpty) {
+          handleInput(in)
+        } else {
+          fileNames.foreach { fileName =>
+            for (fileIn <- managed(new FileInputStream(fileName))) {
+              handleInput(fileIn)
+            }
+          }
+        }
+      case None =>
+    }
   }
 
   private def evalExternal(commandName: String, args: List[Block], in: InputStream, out: OutputStream): Unit = {
