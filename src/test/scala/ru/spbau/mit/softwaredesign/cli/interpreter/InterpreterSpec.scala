@@ -11,8 +11,6 @@ import scala.io.Source
 import scala.util.Properties
 
 class InterpreterSpec extends FlatSpec {
-  private val testFilePath = getClass.getResource("/lorem_ipsum.txt").getPath
-
   def withInterpreter(test: CommandLineInterpreter => Any): Any = {
     val cli = new CommandLineInterpreter
     test(cli)
@@ -63,6 +61,7 @@ class InterpreterSpec extends FlatSpec {
 
   it should "interpret cat with args" in withInterpreter { cli =>
     withPipe { (sink, source) =>
+      val testFilePath = getClass.getResource("/lorem_ipsum.txt").getPath
       val commandLine = s"cat $testFilePath"
       evalCommandLine(commandLine, cli, sink)
       val expected = Source.fromFile(testFilePath).mkString
@@ -83,6 +82,7 @@ class InterpreterSpec extends FlatSpec {
 
   it should "interpret wc with args" in withInterpreter { cli =>
     withPipe { (sink, source) =>
+      val testFilePath = getClass.getResource("/lorem_ipsum.txt").getPath
       val commandLine = s"wc $testFilePath"
       evalCommandLine(commandLine, cli, sink)
       val expected = "7 1743 12124 "
@@ -106,36 +106,6 @@ class InterpreterSpec extends FlatSpec {
       val commandLine = "pwd"
       evalCommandLine(commandLine, cli, sink)
       val expected = System.getProperty("user.dir") + Properties.lineSeparator
-      val actual = Source.fromInputStream(source).mkString
-      assertResult(expected)(actual)
-    }
-  }
-
-  it should "interpret external command with args" in withInterpreter { cli =>
-    withPipe { (sink, source) =>
-      val commandLine = s"head -n 1 $testFilePath"
-      evalCommandLine(commandLine, cli, sink)
-      val expected = Source.fromFile(testFilePath).getLines().next() + Properties.lineSeparator
-      val actual = Source.fromInputStream(source).mkString
-      assertResult(expected)(actual)
-    }
-  }
-
-  it should "interpret external command with no args" in withInterpreter { cli =>
-    withPipe { (sink, source) =>
-      val commandLine = "echo a b c | head -n 1"
-      evalCommandLine(commandLine, cli, sink)
-      val expected = "a b c" + Properties.lineSeparator
-      val actual = Source.fromInputStream(source).mkString
-      assertResult(expected)(actual)
-    }
-  }
-
-  it should "interpret an assignment and substitution" in withInterpreter { cli =>
-    withPipe { (sink, source) =>
-      val commandLine = "answer=42 | echo $answer"
-      evalCommandLine(commandLine, cli, sink)
-      val expected = "42" + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -209,6 +179,37 @@ class InterpreterSpec extends FlatSpec {
       evalCommandLine(commandLine, cli, sink)
       val expected = s"3${Properties.lineSeparator}1${Properties.lineSeparator}" +
                      s"3${Properties.lineSeparator}1${Properties.lineSeparator}"
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  it should "interpret external command with args" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val testFilePath = getClass.getResource("/lorem_ipsum.txt").getPath
+      val commandLine = s"head -n 1 $testFilePath"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = Source.fromFile(testFilePath).getLines().next() + Properties.lineSeparator
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  it should "interpret external command with no args" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val commandLine = "echo a b c | head -n 1"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = "a b c" + Properties.lineSeparator
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  it should "interpret an assignment and substitution" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val commandLine = "answer=42 | echo $answer"
+      evalCommandLine(commandLine, cli, sink)
+      val expected = "42" + Properties.lineSeparator
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }

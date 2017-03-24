@@ -44,8 +44,8 @@ class CommandLineInterpreter {
           case "echo" => evalEcho(args, out)
           case "wc" => evalWc(args, in, out)
           case "pwd" => evalPwd(out)
-          case "exit" => evalExit()
           case "grep" => evalGrep(args, in, out)
+          case "exit" => evalExit()
           case commandName => evalExternal(commandName, args, in, out)
         }
       case _ => new IllegalStateException()
@@ -97,10 +97,6 @@ class CommandLineInterpreter {
   private def evalPwd(out: OutputStream): Unit = {
     val userDir = System.getProperty("user.dir")
     out.write((userDir + Properties.lineSeparator).getBytes)
-  }
-
-  private def evalExit(): Unit = {
-    System.exit(0)
   }
 
   private def evalGrep(args: List[Block], in: InputStream, out: OutputStream): Unit = {
@@ -169,6 +165,10 @@ class CommandLineInterpreter {
         }
       case None =>
     }
+  }
+
+  private def evalExit(): Unit = {
+    System.exit(0)
   }
 
   private def evalExternal(commandName: String, args: List[Block], in: InputStream, out: OutputStream): Unit = {
