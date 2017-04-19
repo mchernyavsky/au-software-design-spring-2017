@@ -1,6 +1,7 @@
 package ru.spbau.mit.softwaredesign.cli.interpreter
 
 import java.io.{InputStream, OutputStream}
+import java.net.URLDecoder
 import java.nio.channels.{Channels, Pipe}
 
 import org.scalatest.FlatSpec
@@ -26,16 +27,32 @@ class InterpreterSpec extends FlatSpec {
     }
   }
 
-  def evalCommandLine(commandLine: String, cli: CommandLineInterpreter, sink: OutputStream): Unit = {
-    def parseCommandLine(commandLine: String): Composition = {
-      CommandLineParsers.parse(commandLine) match {
-        case CommandLineParsers.Success(pipeline, _) => pipeline
-        case _ => fail
-      }
+  def parseCommandLine(commandLine: String): Composition = {
+    CommandLineParsers.parse(commandLine) match {
+      case CommandLineParsers.Success(pipeline, _) => pipeline
+      case _ => fail
     }
+  }
 
+  def evalCommandLine(commandLine: String, cli: CommandLineInterpreter, sink: OutputStream): Unit = {
     val parsedCommandLine = parseCommandLine(commandLine)
     cli.eval(parsedCommandLine, System.in, sink)
+    sink.close()
+  }
+
+  def evalCdCommand(commandLine: String, cli: CommandLineInterpreter, sink: OutputStream) : Unit ={
+    val userDir = System.getProperty("user.dir")
+    cli.eval(parseCommandLine("cd " + userDir), System.in, sink)
+    val parsedCommandLine = parseCommandLine(commandLine)
+    cli.eval(parsedCommandLine, System.in, sink)
+    cli.eval(parseCommandLine("pwd"), System.in, sink)
+    sink.close()
+  }
+
+  def evalLsCommand(commandLine : String, cli: CommandLineInterpreter, sink:OutputStream) : Unit ={
+    val testDirPath = URLDecoder.decode(getClass.getResource("/test_folder").getPath, "UTF-8")
+    cli.eval(parseCommandLine("cd " + testDirPath), System.in, sink)
+    cli.eval(parseCommandLine(commandLine), System.in, sink)
     sink.close()
   }
 
@@ -64,7 +81,7 @@ class InterpreterSpec extends FlatSpec {
       val testFilePath = getClass.getResource("/lorem_ipsum.txt").getPath
       val commandLine = s"cat $testFilePath"
       evalCommandLine(commandLine, cli, sink)
-      val expected = Source.fromFile(testFilePath).mkString
+      val expected = Source.fromFile(URLDecoder.decode(testFilePath, "UTF-8")).mkString
       val actual = Source.fromInputStream(source).mkString
       assertResult(expected)(actual)
     }
@@ -184,9 +201,52 @@ class InterpreterSpec extends FlatSpec {
     }
   }
 
+  it should "interpret cd with no args" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      evalCdCommand("cd", cli, sink)
+      val expected = System.getProperty("user.home") + Properties.lineSeparator
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  it should "interpret cd with args" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      val testDirPath = URLDecoder.decode(getClass.getResource("/test_folder").getPath, "UTF-8")
+      evalCdCommand("cd " + testDirPath, cli, sink)
+      val expected = testDirPath + Properties.lineSeparator
+      val actual = Source.fromInputStream(source).mkString
+      assertResult(expected)(actual)
+    }
+  }
+
+  it should "interpret ls with no args" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      evalLsCommand("ls", cli, sink)
+      val testFilePath = URLDecoder.decode(getClass
+        .getResource("/test_folder/ls_command_result.txt")
+        .getPath, "UTF-8")
+      val expected = Source.fromFile(testFilePath).mkString
+      val actual = Source.fromInputStream(source).mkString + Properties.lineSeparator
+      assertResult(expected)(actual)
+    }
+  }
+
+  it should "interpret ls with args" in withInterpreter { cli =>
+    withPipe { (sink, source) =>
+      evalLsCommand("ls test_folder_2", cli, sink)
+      val testFilePath = URLDecoder.decode(getClass
+        .getResource("/test_folder/test_folder_2/ls_command_result.txt")
+        .getPath, "UTF-8")
+      val expected = Source.fromFile(testFilePath).mkString
+      val actual = Source.fromInputStream(source).mkString + Properties.lineSeparator
+      assertResult(expected)(actual)
+    }
+  }
+
   it should "interpret external command with args" in withInterpreter { cli =>
     withPipe { (sink, source) =>
-      val testFilePath = getClass.getResource("/lorem_ipsum.txt").getPath
+      val testFilePath = URLDecoder.decode(getClass.getResource("/lorem_ipsum.txt").getPath, "UTF-8")
       val commandLine = s"head -n 1 $testFilePath"
       evalCommandLine(commandLine, cli, sink)
       val expected = Source.fromFile(testFilePath).getLines().next() + Properties.lineSeparator
