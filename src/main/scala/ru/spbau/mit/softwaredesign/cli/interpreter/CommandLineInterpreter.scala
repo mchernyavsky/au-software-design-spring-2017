@@ -183,7 +183,7 @@ class CommandLineInterpreter {
       if (dir.exists() && dir.isDirectory) {
         workDirectory = dir.getCanonicalPath
       } else {
-        throw new IOException("Нет такого каталога " + getAbsolutePath(dirName))
+        throw new IOException(getAbsolutePath(dirName) + ": Нет такого каталога")
       }
     }
   }
